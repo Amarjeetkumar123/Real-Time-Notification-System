@@ -1,0 +1,26 @@
+{
+  "name": "realtime-notification-system",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,worker,web -c blue,magenta,green \"npm run dev:api\" \"npm run dev:worker\" \"npm run dev:web\"",
+    "dev:api": "npm run dev --workspace @realtime/api",
+    "dev:worker": "npm run dev --workspace @realtime/worker",
+    "dev:web": "npm run dev --workspace @realtime/web",
+    "build": "npm run build --workspaces",
+    "lint": "npm run lint --workspaces",
+    "typecheck": "npm run typecheck --workspaces"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "concurrently": "^9.1.2",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "@swc/helpers": "^0.5.15"
+  }
+}

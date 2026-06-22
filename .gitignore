@@ -1,0 +1,10 @@
+node_modules
+apps/api/node_modules
+apps/web/node_modules
+apps/web/node_modules.bak
+.next
+dist
+coverage
+.env
+.env.local
+.DS_Store
