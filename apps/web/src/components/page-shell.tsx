@@ -10,11 +10,42 @@ export function PageShell({
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-5">
+    <section style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       <div>
-        <p className="text-xs uppercase tracking-[0.24em] text-slate-400">{eyebrow}</p>
-        <h2 className="mt-2 text-3xl font-medium tracking-tight text-slate-900">{title}</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">{description}</p>
+        <p
+          style={{
+            margin: 0,
+            fontSize: "10px",
+            textTransform: "uppercase",
+            letterSpacing: "0.18em",
+            color: "#9ca3af",
+            fontWeight: 600,
+          }}
+        >
+          {eyebrow}
+        </p>
+        <h2
+          style={{
+            margin: "6px 0 0",
+            fontSize: "26px",
+            fontWeight: 700,
+            letterSpacing: "-0.03em",
+            color: "#0f0f0f",
+          }}
+        >
+          {title}
+        </h2>
+        <p
+          style={{
+            margin: "6px 0 0",
+            fontSize: "14px",
+            color: "#6b7280",
+            lineHeight: 1.6,
+            maxWidth: "640px",
+          }}
+        >
+          {description}
+        </p>
       </div>
       {children}
     </section>

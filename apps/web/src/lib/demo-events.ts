@@ -3,8 +3,8 @@ export const demoEvents = [
     label: "Signup",
     endpoint: "/events/signup",
     payload: {
-      customerName: "Aarav Sharma",
-      email: "aarav.sharma@example.com",
+      customerName: "John Doe",
+      email: "john.doe@example.com",
       city: "Bengaluru",
     },
   },
@@ -13,7 +13,7 @@ export const demoEvents = [
     endpoint: "/events/order",
     payload: {
       orderId: "ORD-2048",
-      customerName: "Aarav Sharma",
+      customerName: "John Doe",
       restaurantName: "Spice Route Kitchen",
       itemCount: 3,
       totalAmount: 799,
@@ -24,7 +24,7 @@ export const demoEvents = [
     endpoint: "/events/payment",
     payload: {
       orderId: "ORD-2048",
-      customerName: "Aarav Sharma",
+      customerName: "John Doe",
       paymentMethod: "upi",
       amount: 799,
     },

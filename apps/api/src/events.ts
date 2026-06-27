@@ -11,6 +11,7 @@ import type {
 function createEvent<TPayload extends object>(
   type: EventType,
   payload: TPayload,
+  channel?: "socket" | "email" | "sms",
 ): NotificationEvent<TPayload> {
   return {
     id: randomUUID(),
@@ -18,18 +19,19 @@ function createEvent<TPayload extends object>(
     source: "api",
     timestamp: new Date().toISOString(),
     payload,
+    channel,
   };
 }
 
 export const sampleSignup: CustomerSignupPayload = {
-  customerName: "Aarav Sharma",
-  email: "aarav.sharma@example.com",
+  customerName: "John Doe",
+  email: "john.doe@example.com",
   city: "Bengaluru",
 };
 
 export const sampleOrder: OrderPlacedPayload = {
   orderId: "ORD-2048",
-  customerName: "Aarav Sharma",
+  customerName: "John Doe",
   restaurantName: "Spice Route Kitchen",
   itemCount: 3,
   totalAmount: 799,
@@ -37,19 +39,19 @@ export const sampleOrder: OrderPlacedPayload = {
 
 export const samplePayment: PaymentDonePayload = {
   orderId: "ORD-2048",
-  customerName: "Aarav Sharma",
+  customerName: "John Doe",
   paymentMethod: "upi",
   amount: 799,
 };
 
-export function createSignupEvent(payload: CustomerSignupPayload) {
-  return createEvent("user.signup", payload);
+export function createSignupEvent(payload: CustomerSignupPayload, channel?: "socket" | "email" | "sms") {
+  return createEvent("user.signup", payload, channel);
 }
 
-export function createOrderPlacedEvent(payload: OrderPlacedPayload) {
-  return createEvent("order.placed", payload);
+export function createOrderPlacedEvent(payload: OrderPlacedPayload, channel?: "socket" | "email" | "sms") {
+  return createEvent("order.placed", payload, channel);
 }
 
-export function createPaymentDoneEvent(payload: PaymentDonePayload) {
-  return createEvent("payment.done", payload);
+export function createPaymentDoneEvent(payload: PaymentDonePayload, channel?: "socket" | "email" | "sms") {
+  return createEvent("payment.done", payload, channel);
 }

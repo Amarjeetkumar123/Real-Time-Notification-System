@@ -8,6 +8,7 @@ export interface NotificationEvent<TPayload extends object = object> {
   source: EventSource;
   timestamp: string;
   payload: TPayload;
+  channel?: "socket" | "email" | "sms";
 }
 
 export interface CustomerSignupPayload {

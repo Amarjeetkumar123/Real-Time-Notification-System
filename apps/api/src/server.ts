@@ -63,7 +63,8 @@ export async function createApiServer() {
 
   app.post("/events/signup", async (request, response) => {
     const payload = pickPayload(signupSchema, request.body, sampleSignup);
-    const event = createSignupEvent(payload);
+    const channel = (request.body.channel === "socket" || request.body.channel === "email" || request.body.channel === "sms") ? request.body.channel : undefined;
+    const event = createSignupEvent(payload, channel);
 
     await eventQueue.add(event.type, event);
     response.status(201).json({ event });
@@ -71,7 +72,8 @@ export async function createApiServer() {
 
   app.post("/events/order", async (request, response) => {
     const payload = pickPayload(orderSchema, request.body, sampleOrder);
-    const event = createOrderPlacedEvent(payload);
+    const channel = (request.body.channel === "socket" || request.body.channel === "email" || request.body.channel === "sms") ? request.body.channel : undefined;
+    const event = createOrderPlacedEvent(payload, channel);
 
     await eventQueue.add(event.type, event);
     response.status(201).json({ event });
@@ -79,10 +81,59 @@ export async function createApiServer() {
 
   app.post("/events/payment", async (request, response) => {
     const payload = pickPayload(paymentSchema, request.body, samplePayment);
-    const event = createPaymentDoneEvent(payload);
+    const channel = (request.body.channel === "socket" || request.body.channel === "email" || request.body.channel === "sms") ? request.body.channel : undefined;
+    const event = createPaymentDoneEvent(payload, channel);
 
     await eventQueue.add(event.type, event);
     response.status(201).json({ event });
+  });
+
+  app.post("/events/simulate-retry", async (request, response) => {
+    const event = createSignupEvent({
+      customerName: "Simulated Retry User",
+      email: "retry.demo@realtime.dev",
+      city: "San Francisco",
+    });
+    event.payload = { ...event.payload, simulateRetry: true };
+    await eventQueue.add(event.type, event);
+    response.status(201).json({ event });
+  });
+
+  app.post("/events/simulate-fail", async (request, response) => {
+    const event = createSignupEvent({
+      customerName: "Simulated Fatal User",
+      email: "fatal.error@realtime.dev",
+      city: "Chicago",
+    });
+    event.payload = { ...event.payload, simulateFailure: true };
+    await eventQueue.add(event.type, event);
+    response.status(201).json({ event });
+  });
+
+  app.post("/events/simulate-delay", async (request, response) => {
+    const event = createSignupEvent({
+      customerName: "Delayed Job User",
+      email: "delayed.job@realtime.dev",
+      city: "Austin",
+    });
+    event.payload = { ...event.payload, simulateDelay: true };
+    // Enqueue as delayed in Redis (3 seconds)
+    await eventQueue.add(event.type, event, { delay: 3000 });
+    response.status(201).json({ event });
+  });
+
+  app.post("/events/simulate-overflow", async (request, response) => {
+    const events = [];
+    for (let i = 0; i < 15; i++) {
+      const event = createSignupEvent({
+        customerName: `Overflow User #${i + 1}`,
+        email: `overflow.${i + 1}@realtime.dev`,
+        city: "Seattle",
+      });
+      events.push(eventQueue.add(event.type, event));
+    }
+    await Promise.all(events);
+    response.status(201).json({ message: "Queue overflow triggered: 15 events added." });
   });
 
   return { app, httpServer, port: apiConfig.port };
