@@ -15,6 +15,9 @@ export interface CustomerSignupPayload {
   customerName: string;
   email: string;
   city: string;
+  simulateRetry?: boolean;
+  simulateFailure?: boolean;
+  simulateDelay?: boolean;
 }
 
 export interface OrderPlacedPayload {

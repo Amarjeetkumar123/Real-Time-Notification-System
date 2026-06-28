@@ -19,7 +19,7 @@ function createEvent<TPayload extends object>(
     source: "api",
     timestamp: new Date().toISOString(),
     payload,
-    channel,
+    ...(channel !== undefined ? { channel } : {}),
   };
 }
 
