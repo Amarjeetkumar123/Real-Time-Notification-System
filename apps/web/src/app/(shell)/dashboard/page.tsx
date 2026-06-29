@@ -18,7 +18,8 @@ import {
   PlayCircle,
   HelpCircle,
   FileText,
-  Wifi
+  Wifi,
+  Trash2
 } from "lucide-react";
 
 import { NotificationList } from "../../../components/notification-list";
@@ -60,10 +61,28 @@ export default function DashboardPage() {
   const [pipelineKey, setPipelineKey] = useState(0);
   const [pipelineTriggered, setPipelineTriggered] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<any | null>(null);
-  
+  const [apiHealthy, setApiHealthy] = useState<boolean | null>(null);
+  const [clearingData, setClearingData] = useState(false);
+
   // Search & Filter state for event timeline
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"all" | "signup" | "order" | "payment" | "fail">("all");
+
+  // Poll the real /health endpoint every 10s
+  useEffect(() => {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+    async function check() {
+      try {
+        const res = await fetch(`${apiBase}/health`);
+        setApiHealthy(res.ok);
+      } catch {
+        setApiHealthy(false);
+      }
+    }
+    check();
+    const id = setInterval(check, 10_000);
+    return () => clearInterval(id);
+  }, []);
 
   const prevEventTickRef = useRef(lastEventTick);
   const terminalContainerRef = useRef<HTMLDivElement>(null);
@@ -121,14 +140,46 @@ export default function DashboardPage() {
         <StatCard label="Completed Jobs" value={completedEventsCount} accent="#059669" icon={<CheckCircle2 size={12} />} />
         <StatCard label="Failed Jobs" value={failedEventsCount} accent="#dc2626" icon={<AlertTriangle size={12} />} />
         <StatCard label="Job Retries" value={retryCount} accent="#d97706" icon={<RefreshCcw size={12} />} />
-        <StatCard label="Avg Latency" value={totalEvents > 0 ? `${avgLatency} ms` : "—"} accent="#0ea5e9" icon={<Clock size={12} />} />
-        <StatCard label="P95 Latency" value={totalEvents > 0 ? "84 ms" : "—"} accent="#06b6d4" icon={<Clock size={12} />} />
-        <StatCard label="Connected Clients" value={connectionState === "connected" ? "15" : "0"} accent="#059669" icon={<Wifi size={12} />} />
-        <StatCard label="Worker Status" value="3 Active" accent="#059669" icon={<Cpu size={12} />} />
+        <StatCard label="Avg Latency" value={totalEvents > 0 ? `${avgLatency} ms` : "\u2014"} accent="#0ea5e9" icon={<Clock size={12} />} />
+        <StatCard label="P95 Latency" value={totalEvents > 0 ? "84 ms" : "\u2014"} accent="#06b6d4" icon={<Clock size={12} />} />
+        <StatCard label="Connected Clients" value={connectionState === "connected" ? "1" : "0"} accent="#059669" icon={<Wifi size={12} />} />
+        <StatCard label="Worker (In-Process)" value={connectionState === "connected" ? "Active" : "\u2014"} accent="#059669" icon={<Cpu size={12} />} />
         <StatCard label="Active Queue Depth" value={totalEvents > 0 ? "1" : "0"} accent="#c026d3" icon={<Layers size={12} />} />
         <StatCard label="Mock CPU Usage" value="12.4%" accent="var(--color-text)" icon={<Cpu size={12} />} />
         <StatCard label="Mock Memory" value="154 MB" accent="var(--color-text)" icon={<Database size={12} />} />
       </section>
+
+      {/* ── Clear All Data Button ── */}
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <button
+          id="clear-all-data-btn"
+          disabled={clearingData || notifications.length === 0}
+          onClick={async () => {
+            if (!window.confirm("Clear all notifications from Redis and the dashboard? This cannot be undone.")) return;
+            setClearingData(true);
+            await clearNotifications();
+            setClearingData(false);
+          }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "7px",
+            padding: "8px 16px",
+            borderRadius: "8px",
+            border: "1px solid rgba(220,38,38,0.35)",
+            background: notifications.length === 0 ? "var(--color-surface-2)" : "rgba(220,38,38,0.07)",
+            color: notifications.length === 0 ? "var(--color-text-muted)" : "#dc2626",
+            fontSize: "12px",
+            fontWeight: 700,
+            cursor: clearingData || notifications.length === 0 ? "not-allowed" : "pointer",
+            transition: "all 0.15s",
+            opacity: clearingData || notifications.length === 0 ? 0.5 : 1,
+          }}
+        >
+          <Trash2 size={13} />
+          {clearingData ? "Clearing…" : "Clear All Data"}
+        </button>
+      </div>
 
       {/* ── Main Monitor Layout ── */}
       <section style={{ display: "grid", gap: "16px", gridTemplateColumns: "1.6fr 0.9fr" }}>
@@ -312,7 +363,7 @@ export default function DashboardPage() {
               
               <button
                 disabled={!!pendingTrigger}
-                onClick={() => triggerDemo("/events/simulate-retry", {}, "Simulate Retry")}
+                onClick={() => triggerDemo("/events/simulate-retry", { channel: selectedChannel !== "all" ? selectedChannel : undefined }, "Simulate Retry")}
                 style={{ display: "flex", alignItems: "center", gap: "8px", padding: "9px 14px", borderRadius: "8px", border: "1px solid var(--color-amber)", background: "rgba(217,119,6,0.06)", color: "var(--color-amber)", fontSize: "12px", fontWeight: 700 }}
               >
                 <RefreshCcw size={13} />
@@ -321,7 +372,7 @@ export default function DashboardPage() {
 
               <button
                 disabled={!!pendingTrigger}
-                onClick={() => triggerDemo("/events/simulate-fail", {}, "Simulate Failure")}
+                onClick={() => triggerDemo("/events/simulate-fail", { channel: selectedChannel !== "all" ? selectedChannel : undefined }, "Simulate Failure")}
                 style={{ display: "flex", alignItems: "center", gap: "8px", padding: "9px 14px", borderRadius: "8px", border: "1px solid var(--color-rose)", background: "var(--color-rose-light)", color: "var(--color-rose)", fontSize: "12px", fontWeight: 700 }}
               >
                 <AlertTriangle size={13} />
@@ -330,7 +381,7 @@ export default function DashboardPage() {
 
               <button
                 disabled={!!pendingTrigger}
-                onClick={() => triggerDemo("/events/simulate-delay", {}, "Simulate Delay")}
+                onClick={() => triggerDemo("/events/simulate-delay", { channel: selectedChannel !== "all" ? selectedChannel : undefined }, "Simulate Delay")}
                 style={{ display: "flex", alignItems: "center", gap: "8px", padding: "9px 14px", borderRadius: "8px", border: "1px solid #0ea5e9", background: "rgba(14,165,233,0.06)", color: "#0ea5e9", fontSize: "12px", fontWeight: 700 }}
               >
                 <Clock size={13} />
@@ -348,7 +399,7 @@ export default function DashboardPage() {
 
               <button
                 disabled={!!pendingTrigger}
-                onClick={() => triggerDemo("/events/simulate-overflow", {}, "Simulate Queue Overflow")}
+                onClick={() => triggerDemo("/events/simulate-overflow", { channel: selectedChannel !== "all" ? selectedChannel : undefined }, "Simulate Queue Overflow")}
                 style={{ display: "flex", alignItems: "center", gap: "8px", padding: "9px 14px", borderRadius: "8px", border: "1px solid var(--color-violet)", background: "var(--color-violet-light)", color: "var(--color-violet)", fontSize: "12px", fontWeight: 700 }}
               >
                 <Layers size={13} />
@@ -361,11 +412,10 @@ export default function DashboardPage() {
           <Card>
             <SectionTitle title="Infrastructure Health" />
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "14px" }}>
-              <HealthIndicator label="Express Gateway API" status={connectionState === "connected" ? "online" : "offline"} />
-              <HealthIndicator label="Redis Queue Server" status="online" />
-              <HealthIndicator label="BullMQ Scheduler" status="online" />
-              <HealthIndicator label="Worker Cluster" status="online" />
-              <HealthIndicator label="PostgreSQL DB Cache" status="online" />
+              <HealthIndicator label="Unified API + Worker" status={apiHealthy === null ? "warning" : apiHealthy ? "online" : "offline"} />
+              <HealthIndicator label="Redis (Queue + Store)" status={connectionState === "connected" ? "online" : "warning"} />
+              <HealthIndicator label="BullMQ Queue" status={connectionState === "connected" ? "online" : "warning"} />
+              <HealthIndicator label="NotifyService Worker" status={connectionState === "connected" ? "online" : "offline"} />
               <HealthIndicator label="Socket.io Gateway" status={connectionState === "connected" ? "online" : "offline"} />
             </div>
           </Card>
@@ -415,18 +465,35 @@ export default function DashboardPage() {
           </div>
         </Card>
 
-        {/* Background Worker Cluster Telemetry */}
+        {/* In-Process Worker Monitor — reflects merged API+Worker architecture */}
         <Card>
-          <SectionTitle title="Distributed Worker Pool Monitor" />
+          <SectionTitle title="In-Process Worker Monitor" />
           <p style={{ margin: "6px 0 14px", fontSize: "13px", color: "var(--color-text-muted)" }}>
-            Background worker cluster statuses resolving queued tasks.
+            API and Worker run in the same Node.js process. NotifyService consumes BullMQ jobs and routes them to the correct channel.
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
             {[
-              { id: "Worker 1 (SIG-0081)", status: "Active (Processing)", desc: "Triggering fan-out notify channels", color: "#059669", active: true },
-              { id: "Worker 2 (SIG-0082)", status: "Idle", desc: "Waiting for BullMQ events", color: "#2563eb", active: false },
-              { id: "Worker 3 (SIG-0083)", status: "Idle", desc: "Waiting for BullMQ events", color: "#2563eb", active: false },
-              { id: "Worker 4 (SIG-0084)", status: "Offline", desc: "Disabled by administrator command", color: "var(--color-text-muted)", active: false },
+              {
+                id: "NotifyService (BullMQ Worker)",
+                status: connectionState === "connected" ? "Active" : "Offline",
+                desc: "Processes notification jobs — socket / email / sms fan-out",
+                color: connectionState === "connected" ? "#059669" : "var(--color-text-muted)",
+                active: connectionState === "connected",
+              },
+              {
+                id: "QueueService (BullMQ Queue)",
+                status: connectionState === "connected" ? "Ready" : "Offline",
+                desc: "Enqueues events from REST routes into Redis",
+                color: connectionState === "connected" ? "#2563eb" : "var(--color-text-muted)",
+                active: false,
+              },
+              {
+                id: "NotificationStoreService (Redis)",
+                status: connectionState === "connected" ? "Connected" : "Offline",
+                desc: "Persists last 100 notifications via Redis List (LPUSH/LTRIM)",
+                color: connectionState === "connected" ? "#dc2626" : "var(--color-text-muted)",
+                active: false,
+              },
             ].map((wk) => (
               <div key={wk.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--color-surface-2)", border: "1px solid var(--color-border)", borderRadius: "10px", padding: "12px 16px" }}>
                 <div>
